@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Máy tính lương KPI theo ngày</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#64748b;--line:#dbe3ef;--blue:#2563eb;--blue2:#1d4ed8;--green:#15803d;--red:#b91c1c;--amber:#b45309}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink);line-height:1.45}
+.wrap{max-width:1180px;margin:28px auto;padding:0 16px}.hero{background:linear-gradient(135deg,#14213d,#2563eb);color:#fff;padding:24px;border-radius:18px;margin-bottom:18px}
+h1{font-size:clamp(23px,3vw,32px);margin:0 0 6px}.hero p{margin:0;color:#dbeafe}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px;margin-bottom:16px;box-shadow:0 4px 16px #17203308}
+h2{font-size:18px;margin:0 0 14px}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:700;color:#334155;margin-bottom:6px}
+input,select{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px 11px;font:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid #bfdbfe;border-color:var(--blue)}
+.help{font-size:12px;color:var(--muted);margin-top:5px}
+button{border:0;border-radius:9px;padding:10px 13px;font-weight:700;cursor:pointer;font-size:14px}
+.primary{background:var(--blue);color:white}.primary:hover{background:var(--blue2)}.secondary{background:#e8eef8;color:#1e3a8a}.danger{background:#fee2e2;color:var(--red)}.success{background:#dcfce7;color:#166534}.warning{background:#fef3c7;color:#92400e}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}.metric .name{font-size:12px;color:var(--muted);font-weight:700}.metric .value{font-size:clamp(18px,2vw,25px);font-weight:800;margin-top:5px;overflow-wrap:anywhere}.metric small{color:var(--muted)}
+.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:10px 9px;border-bottom:1px solid #e5eaf2;text-align:left;font-size:13px;white-space:nowrap}th{background:#f8fafc;color:#475569}tr.leave{background:#fff7ed}tr.selected{outline:2px solid #93c5fd;outline-offset:-2px}
+.pill{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#dbeafe;color:#1d4ed8}.pill.leave{background:#ffedd5;color:#9a3412}
+.note{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;color:#475569;font-size:13px}
+.status{margin-top:10px;font-size:13px;color:var(--green);min-height:18px}
+.footer{color:var(--muted);font-size:12px;text-align:center;margin:14px 0 28px}
+@media(max-width:850px){.grid,.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.grid,.fields,.summary{grid-template-columns:1fr}.wrap{margin:14px auto}.hero{padding:19px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>Máy tính lương KPI theo ngày</h1>
+    <p>Nhập kết quả từng ngày, lưu tạm trong trình duyệt và tổng kết lương cuối tháng.</p>
+  </header>
+
+  <section class="card">
+    <h2>1. Thiết lập lương tháng</h2>
+    <div class="fields">
+      <div><label for="baseSalary">Lương cứng (VNĐ/tháng)</label><input id="baseSalary" type="number" min="0" step="100000" value="6000000"></div>
+      <div><label for="kpiSalary">Lương KPI (VNĐ/tháng ở 100%)</label><input id="kpiSalary" type="number" min="0" step="100000" value="3000000"></div>
+      <div><label for="workDays">Số ngày công chuẩn/tháng</label><input id="workDays" type="number" min="1" max="31" step="1" value="22"></div>
+    </div>
+    <div class="help">Ví dụ: lương cứng 6.000.000đ + lương KPI 3.000.000đ = tổng lương mục tiêu 9.000.000đ ở KPI 100%.</div>
+  </section>
+
+  <section class="card">
+    <h2>2. Nhập kết quả một ngày</h2>
+    <div class="fields">
+      <div><label for="dayDate">Ngày làm việc</label><input id="dayDate" type="date"></div>
+      <div><label for="kpiHours">Số giờ KPI đạt trong ngày</label><input id="kpiHours" type="number" min="0" step="0.25" value="3.5"><div class="help">3,5 giờ = 100% KPI.</div></div>
+      <div><label for="extraHours">Thời gian làm dư (giờ)</label><input id="extraHours" type="number" min="0" step="0.25" value="0"><div class="help">Phần vượt mục tiêu; quy đổi hiệu suất 50%.</div></div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="saveDay">Lưu ngày / Cập nhật ngày</button>
+      <button class="secondary" id="newDay">Tạo ngày mới</button>
+      <button class="warning" id="leaveDay">Đánh dấu ngày nghỉ phép</button>
+      <button class="danger" id="deleteDay">Xóa ngày đang chọn</button>
+    </div>
+    <div class="status" id="status" aria-live="polite"></div>
+  </section>
+
+  <section class="summary">
+    <div class="metric"><div class="name">TỔNG LƯƠNG TRƯỚC BH</div><div class="value" id="gross">0đ</div><small>Lương cứng + KPI</small></div>
+    <div class="metric"><div class="name">BẢO HIỂM TẠM TÍNH</div><div class="value" id="insurance">0đ</div><small>10,5% lương cứng</small></div>
+    <div class="metric"><div class="name">THỰC NHẬN SAU BH</div><div class="value" id="net">0đ</div><small>Chưa trừ thuế/phụ cấp khác</small></div>
+    <div class="metric"><div class="name">KPI QUY ĐỔI</div><div class="value" id="achievement">0%</div><small id="daysSummary">0 ngày đã nhập</small></div>
+  </section>
+
+  <section class="card">
+    <h2>3. Bảng ngày đã lưu tạm</h2>
+    <div class="note">Chọn một dòng để chỉnh sửa hoặc đánh dấu nghỉ phép. Dữ liệu được lưu tự động trong bộ nhớ trình duyệt của thiết bị này (localStorage), không gửi lên máy chủ.</div>
+    <div class="tablewrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th>Ngày</th><th>Trạng thái</th><th>Giờ KPI</th><th>Giờ làm dư</th><th>KPI ngày</th><th>Tiền KPI quy đổi</th><th>Thao tác</th></tr></thead>
+        <tbody id="dayRows"><tr><td colspan="7">Chưa có dữ liệu. Hãy nhập ngày đầu tiên.</td></tr></tbody>
+      </table>
+    </div>
+    <div class="actions"><button class="primary" id="calculate">Tính lương tháng</button><button class="secondary" id="exportCsv">Xuất CSV</button><button class="danger" id="clearAll">Xóa toàn bộ dữ liệu tháng</button></div>
+    <div class="help" id="formulaText"></div>
+  </section>
+  <div class="footer">Lưu ý: Đây là công cụ ước tính theo giả định hiển thị bên dưới; hãy đối chiếu quy chế lương và căn cứ đóng bảo hiểm thực tế.</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = 'dailyKpiSalaryCalculator_v1';
+let days = [];
+let selectedDate = null;
+let calculated = false;
+
+const money = n => new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(Math.round(n || 0));
+const num = id => Math.max(0, Number($(id).value) || 0);
+const safeDate = () => $('dayDate').value || new Date().toISOString().slice(0,10);
+const settings = () => ({
+  base: num('baseSalary'),
+  kpi: num('kpiSalary'),
+  workDays: Math.max(1, num('workDays'))
+});
+function persist(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify({days, settings:settings()})); } catch(e) {} }
+function load(){
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if(Array.isArray(data.days)) days = data.days;
+    if(data.settings){
+      if(data.settings.base != null) $('baseSalary').value = data.settings.base;
+      if(data.settings.kpi != null) $('kpiSalary').value = data.settings.kpi;
+      if(data.settings.workDays != null) $('workDays').value = data.settings.workDays;
+    }
+  } catch(e) { days=[]; }
+  $('dayDate').value = new Date().toISOString().slice(0,10);
+  render();
+}
+function dailyKpiHours(d){
+  if(d.leave) return 0;
+  const target = 3.5;
+  const regular = Math.min(Math.max(0,d.hours), target) / target;
+  const excess = Math.max(0,d.extra) / target * 0.5;
+  return regular + excess;
+}
+function dailyAccrual(d){
+  const s=settings();
+  if(d.leave) return s.base / s.workDays;
+  const totalSalary = s.base + s.kpi;
+  return (totalSalary / s.workDays) * dailyKpiHours(d);
+}
+function findDay(date){ return days.find(d=>d.date===date); }
+function setStatus(msg){ $('status').textContent=msg; }
+function clearEditor(){
+  selectedDate=null;
+  $('dayDate').value = new Date().toISOString().slice(0,10);
+  $('kpiHours').value=3.5; $('extraHours').value=0;
+}
+function editorFrom(d){
+  selectedDate=d.date; $('dayDate').value=d.date;
+  $('kpiHours').value=d.hours; $('extraHours').value=d.extra;
+  setStatus('Đang chỉnh sửa ngày '+d.date+(d.leave?' (nghỉ phép)':'')+'.');
+}
+function saveDay(leave=false){
+  const date=safeDate();
+  if(!date){setStatus('Vui lòng chọn ngày.');return;}
+  const old=findDay(date);
+  const record={date, hours:leave?0:num('kpiHours'), extra:leave?0:num('extraHours'), leave:!!leave};
+  if(old){ days=days.map(d=>d.date===date?record:d); }
+  else days.push(record);
+  days.sort((a,b)=>a.date.localeCompare(b.date));
+  selectedDate=date; persist(); render(); editorFrom(record);
+  setStatus(leave?'Đã đánh dấu '+date+' là nghỉ phép; ngày này không được tính KPI.':'Đã lưu dữ liệu ngày '+date+'.');
+}
+function render(){
+  const tbody=$('dayRows');
+  if(!days.length){tbody.innerHTML='<tr><td colspan="7">Chưa có dữ liệu. Hãy nhập ngày đầu tiên.</td></tr>';}
+  else {
+    tbody.innerHTML=days.map(d=>{
+      const rate=dailyKpiHours(d)*100;
+      return `<tr class="${d.leave?'leave':''} ${selectedDate===d.date?'selected':''}">
+      <td>${d.date}</td><td><span class="pill ${d.leave?'leave':''}">${d.leave?'Nghỉ phép':'Đi làm'}</span></td>
+      <td>${d.hours.toLocaleString('vi-VN')} h</td><td>${d.extra.toLocaleString('vi-VN')} h</td>
+      <td>${rate.toLocaleString('vi-VN',{maximumFractionDigits:1})}%</td><td>${money(dailyAccrual(d))}</td>
+      <td><button class="secondary" onclick="selectRow('${d.date}')">Chọn / sửa</button></td></tr>`;
+    }).join('');
+  }
+  updateSummary();
+}
+window.selectRow = date => { const d=findDay(date); if(d) editorFrom(d); render(); };
+function updateSummary(){
+  const s=settings();
+  // Lương cứng được tính theo số ngày đã nhập; ngày nghỉ phép chỉ ghi nhận lương cứng.
+  const enteredDays=days.length;
+  const baseEarned=s.base * Math.min(enteredDays/s.workDays,1);
+  const monthlyAccrual=days.reduce((sum,d)=>sum+dailyAccrual(d),0);
+  // Lương cuối cùng không thấp hơn phần lương cứng tương ứng số ngày đã nhập.
+  const gross=Math.max(baseEarned, monthlyAccrual);
+  const kpiEarned=Math.max(0,gross-baseEarned);
+  const insurance=s.base*0.105*Math.min(enteredDays/s.workDays,1);
+  $('gross').textContent=money(gross);
+  $('insurance').textContent=money(insurance);
+  $('net').textContent=money(gross-insurance);
+  const expectedTotal=s.base+s.kpi;
+  $('achievement').textContent=(expectedTotal?Math.min(999,monthlyAccrual/(expectedTotal*Math.min(enteredDays/s.workDays,1)||1)*100):0).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%';
+  $('daysSummary').textContent=`${days.length} ngày đã nhập · ${days.filter(d=>d.leave).length} ngày nghỉ phép · KPI cộng thêm ${money(kpiEarned)}`;
+  $('formulaText').textContent=`Cách tính: ngày đi làm = (lương cứng + lương KPI) ÷ ngày công chuẩn × [min(giờ KPI, 3,5) ÷ 3,5 + (giờ làm dư ÷ 3,5 × 50%)]. Ngày nghỉ phép chỉ nhận lương cứng/ngày. Tổng lương = mức cao hơn giữa lương cứng theo số ngày đã nhập và tổng tích lũy hằng ngày. Bảo hiểm tạm tính = 10,5% lương cứng theo tỷ lệ ngày đã nhập. Đây là ước tính; cần đối chiếu quy chế công ty.`;
+}
+$('saveDay').addEventListener('click',()=>saveDay(false));
+$('leaveDay').addEventListener('click',()=>saveDay(true));
+$('newDay').addEventListener('click',()=>{clearEditor();setStatus('Đã tạo biểu mẫu ngày mới.');render();});
+$('deleteDay').addEventListener('click',()=>{
+  const date=selectedDate||safeDate();
+  if(!findDay(date)){setStatus('Không tìm thấy ngày để xóa.');return;}
+  days=days.filter(d=>d.date!==date); if(selectedDate===date)clearEditor();
+  persist();render();setStatus('Đã xóa ngày '+date+'.');
+});
+$('calculate').addEventListener('click',()=>{calculated=true;persist();updateSummary();setStatus('Đã tổng kết lương tạm tính từ các ngày đang lưu.');});
+$('clearAll').addEventListener('click',()=>{
+  if(!confirm('Bạn có chắc muốn xóa toàn bộ ngày đã lưu?'))return;
+  days=[];selectedDate=null;persist();render();clearEditor();setStatus('Đã xóa toàn bộ dữ liệu ngày.');
+});
+$('exportCsv').addEventListener('click',()=>{
+  const header=['Ngày','Trạng thái','Giờ KPI','Giờ làm dư','KPI ngày (%)','Tiền tích lũy ngày (VND)'];
+  const rows=days.map(d=>[d.date,d.leave?'Nghỉ phép':'Đi làm',d.hours,d.extra,(dailyKpiHours(d)*100).toFixed(2),Math.round(dailyAccrual(d))]);
+  const csv=[header,...rows].map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='bang-luong-kpi.csv';a.click();URL.revokeObjectURL(url);
+});
+['baseSalary','kpiSalary','workDays'].forEach(id=>$(id).addEventListener('change',()=>{persist();render();}));
+load();
+</script>
+</body>
+</html>
